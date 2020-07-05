@@ -1,6 +1,8 @@
 package basic
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -15,8 +17,18 @@ func TestNewTx(t *testing.T) {
 	amount := uint64(100)
 	tx := NewTx(from, to, amount)
 
-	assert.Equal(t, "0x4c9e722b72ffe104c937d62d4e449b0307a474b2ebb808455ffb37d7ad9e069a", tx.Hash.String())
-	assert.Equal(t, "cc56f727b11289925941d9100b992b0e60ff1c8e40ef59c06031bd167ed206f404f2a7f38b377df964000000000000004c9e722b72ffe104c937d62d4e449b0307a474b2ebb808455ffb37d7ad9e069a", tx.Hex())
+	assert.Equal(t, byte(0), tx.Hash[0])
+}
+
+func TestParserBytes(t *testing.T) {
+	from := common.HexToAddress("0xcc56f727B11289925941D9100b992b0e60ff1C8e")
+	to := common.HexToAddress("0x40eF59C06031BD167Ed206F404f2A7f38b377Df9")
+	amount := uint64(100)
+	tx := NewTx(from, to, amount)
+
+	txBytes := tx.Bytes()
+	tx2 := NewTxFromBytes(txBytes)
+	assert.Equal(t, tx, tx2)
 }
 
 func TestLevel(t *testing.T) {
@@ -42,4 +54,43 @@ func TestLevel(t *testing.T) {
 	assert.Equal(t, tx, tx2)
 
 	defer db.Close()
+}
+
+func TestHex(t *testing.T) {
+	bytesTx, err := hex.DecodeString("cc56f727b11289925941d9100b992b0e60ff1c8e40ef59c06031bd167ed206f404f2a7f38b377df9640000000000000000128435dfc1389f0236c7e279a6b21c68d999389f1e8857fe0f2d9fe33d5d8600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c1dff5e000000004c01000000000000")
+	require.Nil(t, err)
+	tx := NewTxFromBytes(bytesTx)
+	assert.Equal(t, "cc56f727b11289925941d9100b992b0e60ff1c8e40ef59c06031bd167ed206f404f2a7f38b377df9640000000000000000128435dfc1389f0236c7e279a6b21c68d999389f1e8857fe0f2d9fe33d5d8600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c1dff5e000000004c01000000000000", tx.Hex())
+}
+
+func TestJson(t *testing.T) {
+	from := common.HexToAddress("0xcc56f727B11289925941D9100b992b0e60ff1C8e")
+	to := common.HexToAddress("0x40eF59C06031BD167Ed206F404f2A7f38b377Df9")
+	amount := uint64(100)
+	tx := NewTx(from, to, amount)
+
+	// convert to JSON
+	res, err := json.Marshal(tx)
+	require.Nil(t, err)
+
+	// load from JSON
+	var tx2 Tx
+	json.Unmarshal(res, &tx2)
+
+	assert.Equal(t, tx, tx2)
+}
+
+func TestVerifyTx(t *testing.T) {
+	account := NewAccountRandom()
+
+	from := account.EthAddress
+	to := common.HexToAddress("0x40eF59C06031BD167Ed206F404f2A7f38b377Df9")
+	amount := uint64(100)
+	tx := NewTx(from, to, amount)
+
+	account.SignTx(&tx)
+
+	res := tx.VerifyTx()
+
+	assert.Equal(t, true, res)
 }
