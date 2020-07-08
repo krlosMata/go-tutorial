@@ -21,6 +21,8 @@ type Tx struct {
 	Nonce     uint64                       `json:"nonce"`
 }
 
+const lengthTx = 80 + crypto.SignatureLength + 8 + 8
+
 // NewTx create transaction from basic fields
 func NewTx(from common.Address, to common.Address, amount uint64) Tx {
 	signature := [crypto.SignatureLength]byte{}

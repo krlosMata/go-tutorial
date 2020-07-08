@@ -3,6 +3,8 @@ package basic
 import (
 	"encoding/hex"
 	"encoding/json"
+	"os"
+	"path"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -38,7 +40,11 @@ func TestLevel(t *testing.T) {
 	tx := NewTx(from, to, amount)
 
 	// open db
-	db, err := leveldb.OpenFile("./tmp", nil)
+	basePath, err := os.Getwd()
+	require.Nil(t, err)
+	pathDb := path.Join(basePath, "tmp")
+
+	db, err := leveldb.OpenFile(pathDb, nil)
 	require.Nil(t, err)
 
 	// write db
@@ -54,6 +60,8 @@ func TestLevel(t *testing.T) {
 	assert.Equal(t, tx, tx2)
 
 	defer db.Close()
+
+	removeDb(pathDb)
 }
 
 func TestHex(t *testing.T) {
